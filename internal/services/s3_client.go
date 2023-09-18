@@ -41,6 +41,7 @@ func (s *S3Client) ListAllObjects(bucket string, wg *sync.WaitGroup) {
 	opts := &s3.ListObjectsInput{
 		Bucket:    aws.String(bucket),
 		Delimiter: aws.String("-"),
+		Marker:    aws.String("tron.blocks.s3/000054070000/000054070330_0000000003390c3a9417a50bfe3cdb6e6853ec95d0d0b896a4820377a26d0b55_118fd68d63b78da42334f021e5b7f8c97caae5bd891c8af1e4889b9e459f79c1.block.lz4"),
 	}
 
 	for {

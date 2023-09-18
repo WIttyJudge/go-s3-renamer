@@ -12,7 +12,7 @@ import (
 var (
 	wg      sync.WaitGroup
 	client  = services.NewS3Client()
-	workers = 7
+	limiter = make(chan struct{}, 50)
 )
 
 func renameFile(key string) {
@@ -29,17 +29,15 @@ func skipProcessing(value string) bool {
 	return match
 }
 
-func process(wg *sync.WaitGroup) {
+func process(key string) {
 	defer wg.Done()
 
-	for key := range client.Keys {
-		ok := skipProcessing(key)
-		if ok {
-			continue
-		}
-
-		renameFile(key)
+	ok := skipProcessing(key)
+	if ok {
+		return
 	}
+
+	renameFile(key)
 }
 
 func main() {
@@ -48,8 +46,17 @@ func main() {
 	wg.Add(1)
 	go client.ListAllObjects("streaming-tron", &wg)
 
-	for i := 0; i < workers; i++ {
-		go process(&wg)
+	for key := range client.Keys {
+		limiter <- struct{}{}
+
+		wg.Add(1)
+
+		go func(key string) {
+			process(key)
+
+			<-limiter
+		}(key)
+
 	}
 
 	wg.Wait()
